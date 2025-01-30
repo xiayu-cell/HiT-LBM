@@ -30,10 +30,10 @@
       python PRM_point/batch_infer_with_Best_N_amz.py
 
 5. Knowledge encoding: in folder `knowledge_encoding`
-   Run `python lm_encoding_with_item_bge.py`
+   1. Run `python lm_encoding_with_item_bge.py`
 
 6. RS: in folder `RS`
-   `bash RS/run_amz.sh` for ctr task
+   1. `bash RS/run_amz.sh` for ctr task
 
 Our implementation code is based on : 
 [KAR](https://github.com/YunjiaXi/Open-World-Knowledge-Augmented-Recommendation/tree/main)
