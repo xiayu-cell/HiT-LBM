@@ -11,7 +11,7 @@
    
 3. User Interest generation
    1. We provide the pre-generated user interest chunks and their corresponding BGE embeddings. The user interests are stored in JSON format, including the interests of each user for each chunk and the evolution of these interests over time with Hierarchical Tree Search.
-   You can be access from [here] (https://drive.google.com/drive/folders/1OdL6JPq_UZUSCO3skAIX3NOxF81goB3F?usp=drive_link)
+   You can be access from [here] (https://drive.google.com/drive/folders/1OdL6JPq_UZUSCO3skAIX3NOxF81goB3F?usp=sharing)
 
    2. You can also use your own LLM to generate user interests.
       1. `cd preference_generation`
