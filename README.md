@@ -27,7 +27,7 @@
          2. `python PRM/batch_infer_book.py`
    
    2. Inference
-      python PRM_point/batch_infer_with_Best_N_amz.py
+      python PRM/batch_infer_with_Best_N_amz.py
 
 5. Knowledge encoding: in folder `knowledge_encoding`
    1. Run `python lm_encoding_with_item_bge.py`
