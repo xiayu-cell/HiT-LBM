@@ -19,7 +19,7 @@
       3. `python batch_infer_item.py`
 
 4. Hierarchical Tree Search
-   1. Process Rating Model】
+   1. Process Rating Model
       1. You can run the following file to achieve the expansion of interest nodes:
          `python batch_infer_with_Best_N.py`
       2. Utilize LLM to score for continuity (SRM) and validity (PRM):
