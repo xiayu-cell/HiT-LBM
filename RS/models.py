@@ -10,8 +10,9 @@ from layers import AttentionPoolingLayer, MLP, CrossNet, ConvertNet, CIN, MultiH
     InterestEvolving, SLAttention
 from layers import Phi_function
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss
-
-
+import pdb
+from dataset_xiayu import AmzDataset
+import torch.nn.functional as F
 def tau_function(x):
     return torch.where(x > 0, torch.exp(x), torch.zeros_like(x))
 
@@ -25,7 +26,8 @@ class BaseModel(nn.Module):
         super(BaseModel, self).__init__()
         self.task = args.task
         self.args = args
-        self.augment_num = 2 if args.augment else 0
+        self.prm = args.prm
+        self.augment_num = 2 if args.augment else 0 # augment_num = 2 -> hist_augment + item_augment
         args.augment_num = self.augment_num
 
         self.item_num = dataset.item_num
@@ -58,11 +60,12 @@ class BaseModel(nn.Module):
         self.rating_embedding = nn.Embedding(self.rating_num + 1, self.embed_dim)
         if self.augment_num:
             self.convert_module = ConvertNet(args, self.dense_dim, self.convert_dropout, self.convert_type)
-            self.dens_vec_num = args.convert_arch[-1] * self.augment_num
+            self.dens_vec_num = args.convert_arch[-1] * self.augment_num  # convert_arch [128,32]
 
         self.module_inp_dim = self.get_input_dim()
         self.field_num = self.get_field_num()
         self.convert_loss = 0
+        self.alignment_loss = 0
 
     def process_input(self, inp):
         device = next(self.parameters()).device
@@ -80,12 +83,42 @@ class BaseModel(nn.Module):
             item_emb = torch.cat([iid_emb, attr_emb], dim=-1)
             # item_emb = item_emb.view(-1, self.itm_emb_dim)
             labels = inp['lb'].to(device)
+            if self.prm:
+                prm_vector = inp['prm_vector']
+            elif self.augment_num:
+                orig_dens_vec = inp['hist_aug_vec']
+                bs, total_length = orig_dens_vec.shape
+                prm_vector = torch.ones(bs,total_length,1)
             if self.augment_num:
-                orig_dens_vec = [inp['hist_aug_vec'].to(device), inp['item_aug_vec'].to(device)]
-                dens_vec = self.convert_module(orig_dens_vec)
+                # orig_dens_vec = [inp['hist_aug_vec'].to(device), inp['item_aug_vec'].to(device)]
+                orig_dens_vec_len = inp['hist_aug_vec_len']
+                orig_item_dens_vec = inp['item_aug_vec'].to(device)
+                orig_dens_vec = inp['hist_aug_vec']
+                bs, total_length = orig_dens_vec.shape  # total_length = 41 * dim
+                dim = self.dense_dim  # 计算 dim
+                n = total_length//dim
+                orig_dens_vec_reshaped = orig_dens_vec.view(bs, n, dim)
+                actual_dens_vec_list = []
+                actual_prm_list = []
+                # 遍历每个样本
+                for i in range(bs):
+                    # 获取当前样本的实际长度
+                    length = orig_dens_vec_len[i]
+                    actual_prm_list.append(prm_vector[i, :length, :])
+                    # 提取实际的密集向量
+                    actual_dens_vec = orig_dens_vec_reshaped[i, :length, :]
+                    # 将结果添加到列表中
+                    actual_dens_vec_list.append(actual_dens_vec.to(device))
+
+                # pdb.set_trace()
+                orig_dens_vec = actual_dens_vec_list
+                dens_vec, llm_user, llm_item = self.convert_module(orig_dens_vec,orig_item_dens_vec,actual_prm_list)
+                # pdb.set_trace()
             else:
-                dens_vec, orig_dens_vec = None, None
-            return item_emb, hist_emb, hist_len, dens_vec, orig_dens_vec, labels
+                dens_vec, orig_dens_vec,orig_item_dens_vec = None, None,None
+            
+            
+            return item_emb, hist_emb, hist_len, dens_vec,llm_user, llm_item, orig_dens_vec,orig_item_dens_vec, labels
         elif self.task == 'rerank':
             iid_emb = self.item_embedding(inp['iid_list'].to(device))
             attr_emb = self.attr_embedding(inp['aid_list'].to(device)).view(-1, self.max_list_len,
@@ -108,7 +141,7 @@ class BaseModel(nn.Module):
 
     def get_input_dim(self):
         if self.task == 'ctr':
-            return self.hist_emb_dim + self.itm_emb_dim + self.dens_vec_num
+            return self.hist_emb_dim + self.itm_emb_dim + self.dens_vec_num # user_hist + target item emb
         elif self.task == 'rerank':
             return self.itm_emb_dim + self.dens_vec_num
         else:
@@ -118,7 +151,7 @@ class BaseModel(nn.Module):
         return self.item_fnum + self.augment_num + self.hist_fnum
 
     def get_filed_input(self, inp):
-        item_embedding, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        item_embedding, user_behavior, hist_len, dens_vec, llm_user, llm_item, orig_dens_vec, orig_item_dens_vec, labels = self.process_input(inp)
         user_behavior = torch.mean(user_behavior, dim=1).view(-1, self.hist_emb_dim)
         if self.augment_num:
             inp = torch.cat([item_embedding, user_behavior, dens_vec], dim=1)
@@ -136,16 +169,26 @@ class BaseModel(nn.Module):
             out = item_embedding
         return out, labels
 
+    def get_alignment_loss(self,user_behavior, user_emb):
+        # 归一化 embedding
+        user_behavior_normalized = F.normalize(user_behavior, p=2, dim=-1)
+        user_emb_normalized = F.normalize(user_emb, p=2, dim=-1)
+        # 计算余弦相似度
+        cosine_sim = torch.sum(user_behavior_normalized * user_emb_normalized, dim=1)
+        loss = torch.mean(1 - cosine_sim)
+        self.alignment_loss = loss
+
     def get_ctr_output(self, logits, labels=None):
         outputs = {
             'logits': torch.sigmoid(logits),
             'labels': labels,
         }
 
+
         if labels is not None:
             if self.output_dim > 1:
                 loss_fct = CrossEntropyLoss()
-                loss = loss_fct(logits.view((-1, self.output_dim)), labels.float())
+                loss = loss_fct(logits.view((-1, self.output_dim)), labels.float()) + self.alignment_loss
             else:
                 loss_fct = BCEWithLogitsLoss()
                 loss = loss_fct(logits.view(-1), labels.view(-1).float())
@@ -202,7 +245,8 @@ class DeepInterestNet(BaseModel):
             :param user_ft (bs, usr_fnum)
             :return score (bs)
         """
-        query, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        # query, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        query, user_behavior, hist_len, dens_vec, llm_user, llm_item,orig_dens_vec,orig_item_dens_vec, labels = self.process_input(inp)
         mask = self.get_mask(hist_len, self.max_hist_len)
 
         user_behavior = self.map_layer(user_behavior)
@@ -210,6 +254,7 @@ class DeepInterestNet(BaseModel):
 
         if self.augment_num:
             concat_input = torch.cat([user_interest, query, dens_vec], dim=-1)
+            # self.get_alignment_loss(user_interest, llm_user)
         else:
             concat_input = torch.cat([user_interest, query], dim=-1)
 
@@ -230,7 +275,7 @@ class DIEN(BaseModel):
         self.interest_extractor = InterestExtractor(self.hist_emb_dim, self.itm_emb_dim)
         self.interest_evolution = InterestEvolving(self.itm_emb_dim, gru_type=args.dien_gru, dropout=self.dropout)
 
-        self.final_mlp = MLP(self.final_mlp_arch, self.module_inp_dim, self.dropout)
+        self.final_mlp = MLP(self.final_mlp_arch, self.module_inp_dim, self.dropout) # [200,80]
         self.final_fc = nn.Linear(self.final_mlp_arch[-1], 1)
 
     def get_input_dim(self):
@@ -243,14 +288,15 @@ class DIEN(BaseModel):
             :param user_ft (bs, usr_fnum)
             :return score (bs)
         """
-        query, user_behavior, length, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        query, user_behavior, length, dens_vec,llm_user, llm_item, orig_dens_vec,orig_item_dens_vec, labels = self.process_input(inp)
         mask = self.get_mask(length, self.max_hist_len)
         length = torch.unsqueeze(length, dim=-1)
         masked_interest = self.interest_extractor(user_behavior, length)
         user_interest = self.interest_evolution(query, masked_interest, length, mask)  # [btz, hdsz]
         # user_interest = masked_interest.sum(dim=1)
         if self.augment_num:
-            concat_input = torch.cat([user_interest, query, dens_vec], dim=-1)
+            concat_input = torch.cat([user_interest, query, dens_vec ], dim=-1)
+            # self.get_alignment_loss(user_interest, llm_user)
         else:
             concat_input = torch.cat([user_interest, query], dim=-1)
         mlp_out = self.final_mlp(concat_input)
@@ -280,7 +326,8 @@ class DCN(BaseModel):
             :param user_ft (bs, usr_fnum)
             :return score (bs)
         '''
-        item_embedding, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        # item_embedding, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        item_embedding, user_behavior, hist_len, dens_vec, llm_user, llm_item,orig_dens_vec,orig_item_dens_vec, labels = self.process_input(inp)
 
         user_behavior = torch.mean(user_behavior, dim=1).view(-1, self.hist_emb_dim)
         if self.augment_num:
@@ -310,7 +357,8 @@ class DeepFM(BaseModel):
         self.dnn_fc_out = nn.Linear(args.deepfm_deep_arch[-1], 1)
 
     def forward(self, inp):
-        item_embedding, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        # item_embedding, user_behavior, hist_len, dens_vec, orig_dens_vec, labels = self.process_input(inp)
+        item_embedding, user_behavior, hist_len, dens_vec, llm_user, llm_item,orig_dens_vec,orig_item_dens_vec, labels = self.process_input(inp)
 
         user_behavior = torch.mean(user_behavior, dim=1).view(-1, self.hist_emb_dim)
         if self.augment_num:
@@ -514,7 +562,7 @@ class MIR(BaseModel):
         self.fc_out = nn.Linear(args.final_mlp_arch[-1], 1)
 
     def forward(self, inp):
-        item_embedding, user_behavior, hist_len, dens_vec, orig_dens_list, labels = self.process_input(inp)
+        item_embedding, user_behavior, hist_len, dens_vec, llm_user, llm_item, orig_dens_list, labels = self.process_input(inp)
         cross_item, _ = self.intra_item_attn(item_embedding, item_embedding, item_embedding)
         cross_hist, _ = self.intra_hist_gru(user_behavior)
         user_seq = torch.cat([user_behavior, cross_hist], dim=-1)
@@ -529,3 +577,31 @@ class MIR(BaseModel):
         scores = torch.sigmoid(scores).view(-1, self.max_list_len)
         outputs = self.get_rerank_output(scores, labels)
         return outputs
+
+def load_model(args, dataset):
+    algo = args.algo
+    device = args.device
+    if algo == 'DIN':
+        model = DeepInterestNet(args, dataset).to(device)
+    elif algo == 'DIEN':
+        model = DIEN(args, dataset).to(device)
+    elif algo == 'DCNv1':
+        model = DCN(args, 'v1', dataset).to(device)
+    elif algo == 'DCNv2':
+        model = DCN(args, 'v2', dataset).to(device)
+    elif algo == 'DeepFM':
+        model = DeepFM(args, dataset).to(device)
+    elif algo == 'xDeepFM':
+        model = xDeepFM(args, dataset).to(device)
+    elif algo == 'AutoInt':
+        model = AutoInt(args, dataset).to(device)
+    elif algo == 'FiBiNet':
+        model = FiBiNet(args, dataset).to(device)
+    elif algo == 'FiGNN':
+        model = FiGNN(args, dataset).to(device)
+    else:
+        print('No Such Model')
+        exit()
+    model.apply(weight_init)
+    return model
+

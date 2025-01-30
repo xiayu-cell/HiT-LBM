@@ -12,7 +12,7 @@ parser.add_argument("--model_name", type=str, required=True, help="Name of the m
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpuid}"
 # Training args
-data_dir = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/data/amz/proc_data/block_len_50'
+data_dir = 'data/amz/proc_data'
 task_name = 'ctr'
 dataset_name = 'amz'
 # dataset_name = 'ml-1m'

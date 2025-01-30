@@ -20,23 +20,37 @@ from utils import load_parse_from_json, setup_seed, load_data, weight_init, str2
 from models import DeepInterestNet, DCN, DeepFM, DIEN, xDeepFM, FiBiNet, FiGNN, AutoInt
 from dataset import AmzDataset
 from optimization import AdamW, get_cosine_schedule_with_warmup, get_constant_schedule_with_warmup
-
+from tqdm import tqdm
+import pandas as pd
 
 def eval(model, test_loader):
     model.eval()
     losses = []
     preds = []
     labels = []
+    uid = []
     t = time.time()
     with torch.no_grad():
         for batch, data in enumerate(test_loader):
             outputs = model(data)
             loss = outputs['loss']
             logits = outputs['logits']
+            uid.extend(data['uid'].detach().cpu().tolist())
             preds.extend(logits.detach().cpu().tolist())
             labels.extend(outputs['labels'].detach().cpu().tolist())
             losses.append(loss.item())
     eval_time = time.time() - t
+    # Create a sample DataFrame
+    data = {
+        'uid': uid,
+        'pred': preds,
+        'label': labels,
+    }
+
+    df = pd.DataFrame(data)
+    # Write the DataFrame to a CSV file
+    df.to_csv('/mmu_nlp_hdd/xiayu12/LIBER/RS/test_res.csv', index=False)
+    # pd.to_csv('/mmu_nlp_hdd/xiayu12/LIBER/RS/test_res.csv')
     auc = roc_auc_score(y_true=labels, y_score=preds)
     ll = log_loss(y_true=labels, y_pred=preds)
     return auc, ll, np.mean(losses), eval_time
@@ -110,13 +124,32 @@ def get_optimizer(args, model, train_data_num):
 
 
 def train(args):
-    train_set = AmzDataset(args.data_dir, 'train', args.task, args.max_hist_len, args.augment, args.aug_prefix)
-    test_set = AmzDataset(args.data_dir, 'test', args.task, args.max_hist_len, args.augment, args.aug_prefix)
-    train_loader = Data.DataLoader(dataset=train_set, batch_size=args.batch_size, shuffle=True)
-    test_loader = Data.DataLoader(dataset=test_set, batch_size=args.batch_size, shuffle=False)
-    print('Train data size:', len(train_set), 'Test data size:', len(test_set))
 
+    train_set = AmzDataset(args.data_dir, 'train', args.task, args.max_hist_len, args.augment, args.aug_prefix,args.prm)
+    test_set = AmzDataset(args.data_dir, 'test', args.task, args.max_hist_len, args.augment, args.aug_prefix,args.prm)
+    train_loader = Data.DataLoader(dataset=train_set, batch_size=args.batch_size, shuffle=True,num_workers=8)
+    test_loader = Data.DataLoader(dataset=test_set, batch_size=args.batch_size, shuffle=False,num_workers=8)
+    print('Train data size:', len(train_set), 'Test data size:', len(test_set))
+    # 检查是否有可用的 GPU，如果有则使用 GPU，否则使用 CPU
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(args, test_set)
+
+    #-------------------------------------------
+    # 测试用
+    # input = {
+    #     'iid': torch.tensor([206]), 'aid': torch.tensor([[4]]), 'lb': torch.tensor([1]), 'hist_iid_seq': torch.tensor([[202, 203, 204,  18, 205]]), 
+    #     'hist_aid_seq': torch.tensor([[[4],[4],[6],[4],[4]]]), 
+    #     'hist_rate_seq': torch.tensor([[3, 4, 4, 4, 3]]), 'hist_seq_len': torch.tensor([5]), 
+    #     'hist_aug_vec_len': torch.tensor([1]), 
+    #     'hist_aug_vec': torch.randn(1, 768)
+    # }
+    # print(model(input))
+    # return 0
+
+    #-------------------------------------------
+
+
+
 
     optimizer, scheduler = get_optimizer(args, model, len(train_set))
 
@@ -131,7 +164,8 @@ def train(args):
         t = time.time()
         train_loss = []
         model.train()
-        for _, data in enumerate(train_loader):
+        for batch_idx, data in tqdm(enumerate(train_loader)):
+            # break
             outputs = model(data)
             loss = outputs['loss']
             optimizer.zero_grad()
@@ -140,6 +174,9 @@ def train(args):
             scheduler.step()
             train_loss.append(loss.item())
             global_step += 1
+            # 打印每个 batch 的训练信息
+            if batch_idx % 10 == 0:  # 每10个 batch 打印一次
+                print(f"Batch {batch_idx + 1}/{len(train_loader)} - Loss: {loss.item():.4f}")
         train_time = time.time() - t
         eval_auc, eval_ll, eval_loss, eval_time = eval(model, test_loader)
         print("EPOCH %d  STEP %d train loss: %.5f, train time: %.5f, test loss: %.5f, test time: %.5f, auc: %.5f, "
@@ -147,13 +184,19 @@ def train(args):
                                  eval_time, eval_auc, eval_ll))
         if eval_auc > best_auc:
             best_auc = eval_auc
+            print()
+            save_path = os.path.join(args.save_dir, args.aug_prefix+'_'+args.algo+f'_auc_{eval_auc}_logloss_{eval_ll}' + '.pt')
             torch.save(model, save_path)
             print('model save in', save_path)
             patience = 0
         else:
             patience += 1
             if patience >= args.patience:
+                print('-------------------------------------------------------------------------------------------')
+                print(f"best_auc for max len {args.max_hist_len}: ", best_auc )
                 break
+        print(f"best_auc for max len {args.max_hist_len}: ", best_auc )
+        
 
 
 def parse_args():
@@ -185,6 +228,7 @@ def parse_args():
     parser.add_argument('--task', default='ctr', type=str, help='task, ctr or rerank')
     parser.add_argument('--algo', default='DIN', type=str, help='model name')
     parser.add_argument('--augment', default='true', type=str, help='whether to use augment vectors')
+    parser.add_argument('--prm', default='False', type=str, help='whether to use prm vectors')
     parser.add_argument('--aug_prefix', default='chatglm_avg', type=str, help='prefix of augment file')
     parser.add_argument('--convert_type', default='HEA', type=str, help='type of convert module')
     parser.add_argument('--max_hist_len', default=5, type=int, help='the max length of user history')
@@ -217,6 +261,7 @@ def parse_args():
 
     args, _ = parser.parse_known_args()
     args.augment = True if args.augment.lower() == 'true' else False
+    args.prm = True if args.prm.lower() == 'true' else False
 
     print('max hist len', args.max_hist_len)
 

@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=2 nohup python /mmu_nlp_hdd/xiayu12/LIBER/RS/run_ctr_xiayu.py > $1 &
+CUDA_VISIBLE_DEVICES=2 nohup python RS/run_ctr_xiayu.py > $1 &
