@@ -2,9 +2,9 @@ import json
 import os
 from sklearn.metrics import roc_auc_score,accuracy_score
 
-with open('/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/amz/block_len_50/prm_data.json','r',encoding='utf-8') as f:
+with open('/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml-1m/prm_data.json','r',encoding='utf-8') as f:
     prm_data = json.load(f)
-prediction_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/amz/block_len_50'
+prediction_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml-1m'
 all_prediction = {}
 total = 0
 pos = 0
@@ -63,7 +63,7 @@ for item in prm_data:
     all_prediction[item['user']][item['block']]['cur_prompt'] = item['cur_prompt']
 
 print(len(all_prediction))
-path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50/final_prm_data.json'
+path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml-1m/prompt_prm_data.json'
 with open(path,'w',encoding='utf-8') as f:
     json.dump(all_prediction,f,ensure_ascii=False,indent=4)
 

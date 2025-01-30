@@ -26,8 +26,11 @@ def get_history_text(data_path):
         user, block, targets, cur_sum, pre_sum, cur_prompt = piece['user'],piece['block'],piece['targets'],piece['cur_sum'],piece['pre_sum'],piece['cur_prompt']
         users.append(user)
         blocks.append(block)
+        user_hist = cur_prompt.split('[Current Movie Viewing History]')[-1].split('\n')[1]
+        # prefix = 'User\'s current book viewing history are listed below.  Book viewing history includes the Book title, category, and the user\'s rating. If the user\'s rating is greater than 4, it is considered that the user likes the book; if the rating is less than or equal to 4, it is considered that the user dislikes the book.'
+
         # all_str = '\n'.join([cur_prompt,cur_sum])
-        all.append(cur_sum)        
+        all.append(user_hist+cur_sum)        
     return users,blocks, all
 
 
@@ -131,8 +134,8 @@ def main(knowledge_path, data_path, model_name, batch_size, aggregate_type):
 
 
 if __name__ == '__main__':
-    KLG_DATA_DIR = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50'
-    SAVE_DATA_DIR = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50'
+    KLG_DATA_DIR = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml-1m'
+    SAVE_DATA_DIR = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml-1m'
     # DATA_SET_NAME = 'amz'
     DATA_SET_NAME = 'ml-1m'
     KLG_PATH = KLG_DATA_DIR

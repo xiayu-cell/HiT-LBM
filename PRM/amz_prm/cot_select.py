@@ -1,7 +1,7 @@
 import json
 import os
 
-prm_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/amz_prm'
+prm_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/amz_prm'
 all = {}
 for filename in os.listdir(prm_interest_folder):
     if filename.startswith(f'prm_interest') and filename.endswith(".json"):
@@ -15,9 +15,9 @@ for filename in os.listdir(prm_interest_folder):
                     for k,v in cot.items():
                         if k not in all[user_id]:
                             preds = v['preds']
-                            max_index = preds.index(min(preds))
+                            max_index = preds.index(max(preds))
                             all[user_id][k] = {
-                                'score': min(preds),
+                                'score': max(preds),
                                 'pre_sum': v['pre_sum'],
                                 'cur_sum': v['cur_sum'][max_index],
                                 'cur_prompt': v['cur_prompt']
@@ -27,9 +27,9 @@ for filename in os.listdir(prm_interest_folder):
                     for k,v in cot.items():
                         if k not in all[user_id]:
                             preds = v['preds']
-                            max_index = preds.index(min(preds))
+                            max_index = preds.index(max(preds))
                             all[user_id][k] = {
-                                'score': min(preds),
+                                'score': max(preds),
                                 'pre_sum': v['pre_sum'],
                                 'cur_sum': v['cur_sum'][max_index],
                                 'cur_prompt': v['cur_prompt']
@@ -41,6 +41,6 @@ for k,v in all.items():
 # sorted_dict = dict(sorted(all.items(), key=lambda item: int(item[0])))
 
 print(len(all))
-path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/amz_prm/all_min_prm_interest.json'
+path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/amz_prm/all_max_prm_interest.json'
 with open(path,'w',encoding='utf-8') as f:
     json.dump(all,f,ensure_ascii=False,indent=4)

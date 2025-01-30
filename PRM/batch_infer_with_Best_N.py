@@ -14,7 +14,7 @@ import math
 import pdb
 import torch
 import torch.nn as nn
-from prm import MLPClassifier
+from prm_ml import MLPClassifier
 from FlagEmbedding import BGEM3FlagModel
 import pdb
 import gc
@@ -26,7 +26,7 @@ def update_prm(block_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = '0,1,2,3,4,5,6,7'
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # 每个blockinfer完，用prm对其进行打分
-    block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_min_prm'
+    block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml_prm'
     if block_id >= 0:
         cur_block_interest = {}
         for filename in os.listdir(block_interest_folder):
@@ -38,36 +38,63 @@ def update_prm(block_id):
                     t = json.load(file)
                     cur_block_interest.update(t)
     # print(cur_block_interest)
-    users,all = [],[]
+    users,all,user_hist_cur_sum = [],[],[]
     for user, blocks in cur_block_interest.items():
         cur_sums, pre_sum, cur_prompt = blocks[str(block_id)]['cur_sum'],blocks[str(block_id)]['pre_sum'],blocks[str(block_id)]['cur_prompt']
         for cur_sum in cur_sums:
             all_str = '\n'.join([cur_prompt,cur_sum])
             all.append(all_str)
             users.append(user)
+            user_hist = cur_prompt.split('[Current Movie Viewing History]')[-1].split('\n')[1]
+            user_hist_cur_sum.append(user_hist+cur_sum)
+            
     sum_loader = DataLoader(all, 16, shuffle=False)
-    pred_list = []
+    point_loader = DataLoader(user_hist_cur_sum,16,shuffle=False)
+    seq_pred_list,point_pred_list = [],[]
     print(f'{torch.cuda.device_count()} 个 gpu ')
     bge_encoder = BGEM3FlagModel(bge_path,  use_fp16=True)
-    prm = MLPClassifier(input_dim,hidden_dim,output_dim)
-    prm.load_state_dict(torch.load(prm_path))
+    seq_prm = MLPClassifier(input_dim,hidden_dim,output_dim)
+    point_prm = MLPClassifier(input_dim,hidden_dim,output_dim)
+
+    seq_prm.load_state_dict(torch.load(seq_prm_path))
+    point_prm.load_state_dict(torch.load(point_prm_path))
+
     for x in tqdm(sum_loader): 
         outputs = bge_encoder.encode(x, 
                         max_length=8192, # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
                         )['dense_vecs']
-        prm = prm.to(device)
+        prm = seq_prm.to(device)
         outputs = torch.tensor(outputs).float().to(device)
         # print(outputs.shape)
         preds = prm(outputs)
         preds = softmax(preds)
-        pred_list.extend(preds[:,1].cpu().tolist())
+        seq_pred_list.extend(preds[:,1].cpu().tolist())
+
+    for x in tqdm(point_loader): 
+        outputs = bge_encoder.encode(x, 
+                        max_length=8192, # If you don't need such a long length, you can set a smaller value to speed up the encoding process.
+                        )['dense_vecs']
+        prm = point_prm.to(device)
+        outputs = torch.tensor(outputs).float().to(device)
+        # print(outputs.shape)
+        preds = prm(outputs)
+        preds = softmax(preds)
+        point_pred_list.extend(preds[:,1].cpu().tolist())
 
     # pdb.set_trace()
-    for idx,pred in zip(users, pred_list):
+    for idx,seq_pred,point_pred in zip(users, seq_pred_list,point_pred_list):
+        if 'seq_preds' not in cur_block_interest[idx][str(block_id)]:
+            cur_block_interest[idx][str(block_id)]['seq_preds'] = []
+        if 'point_preds' not in cur_block_interest[idx][str(block_id)]:
+            cur_block_interest[idx][str(block_id)]['point_preds'] = []
         if 'preds' not in cur_block_interest[idx][str(block_id)]:
             cur_block_interest[idx][str(block_id)]['preds'] = []
-        cur_block_interest[idx][str(block_id)]['preds'].append(pred)
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_min_prm/prm_interest_{block_id}.json', 'w') as f:
+        cur_block_interest[idx][str(block_id)]['seq_preds'].append(seq_pred)
+        cur_block_interest[idx][str(block_id)]['point_preds'].append(point_pred)
+        cur_block_interest[idx][str(block_id)]['preds'].append((point_pred+seq_pred)/2)
+
+        
+    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml_prm/prm_interest_{block_id}.json', 'w') as f:
         json.dump(cur_block_interest,f,ensure_ascii=False,indent=4)
     del device
     del bge_encoder
@@ -116,7 +143,7 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
     # generated_texts = []
     res = {}
 
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_min_prm/interest_{block_id}_{thread_id}.json', 'w') as f:
+    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml_prm/interest_{block_id}_{thread_id}.json', 'w') as f:
         for i in tqdm(range(0,len(prompts),bs)):
             msg = prompts[i:min(i+bs,len(prompts))]
             ques = questions[i:min(i+bs,len(prompts))]
@@ -151,7 +178,8 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
 if __name__ == "__main__":
     prompt_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/data/ml-1m/proc_data/block_len_50/all_prompt.hist'
     model_path = '/share/ad/xiayu12/Open-World-Knowledge-Augmented-Recommendation_Gang/checkpoints/Qwen/Qwen2___5-7B-Instruct'
-    prm_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/checkpoint/cls_epoch_3_threshold_0.5.pth'
+    seq_prm_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/checkpoint/cls_epoch_3_threshold_0.5.pth'
+    point_prm_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ckp/ml-1m/cls_epoch_8_threshold_0.5.pth'
     bge_path = '/mmu_nlp_hdd/xiayu12/LIBER/llm/bge-m3'
     with open(prompt_path,'r',encoding='utf-8') as f:
         data = json.load(f)
@@ -168,10 +196,10 @@ if __name__ == "__main__":
     softmax = nn.Softmax(dim=-1)
 
     print('Load successful')
-    for block_id in range(26,200):
+    for block_id in range(0,200):
         data_list = []
 
-        block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_min_prm'
+        block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/ml_prm'
 
         if block_id > 0:
             pre_block_interest = {}
@@ -192,7 +220,7 @@ if __name__ == "__main__":
                 else:
                     # pdb.set_trace()
                     preds = pre_block_interest[user_id][str(block_id-1)]['preds']
-                    max_index = preds.index(min(preds))
+                    max_index = preds.index(max(preds))
                     pre_interest = pre_block_interest[user_id][str(block_id-1)]['cur_sum'][max_index]
 
                 data_list.append({
