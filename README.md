@@ -14,14 +14,14 @@
    You can be access from [here] (https://drive.google.com/drive/folders/1OdL6JPq_UZUSCO3skAIX3NOxF81goB3F?usp=drive_link)
 
    2. You can also use your own LLM to generate user interests.
-      1. cd preference_generation
-      2. python batch_infer.py
-      3. python batch_infer_item.py
+      1. `cd preference_generation`
+      2. `python batch_infer.py`
+      3. `python batch_infer_item.py`
 
 4. Hierarchical Tree Search
    1. Process Rating Model】
       1. You can run the following file to achieve the expansion of interest nodes:
-         python batch_infer_with_Best_N.py
+         `python batch_infer_with_Best_N.py`
       2. Utilize LLM to score for continuity (SRM) and validity (PRM):
          `python SRM/batch_infer.py`
          `python PRM/batch_infer_book.py`
