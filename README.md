@@ -23,8 +23,8 @@
       1. You can run the following file to achieve the expansion of interest nodes:
          `python batch_infer_with_Best_N.py`
       2. Utilize LLM to score for continuity (SRM) and validity (PRM):
-         `python SRM/batch_infer.py`
-         `python PRM/batch_infer_book.py`
+         1. `python SRM/batch_infer.py`
+         2. `python PRM/batch_infer_book.py`
    
    2. Inference
       python PRM_point/batch_infer_with_Best_N_amz.py
