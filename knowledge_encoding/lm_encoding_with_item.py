@@ -125,11 +125,11 @@ def main(knowledge_path, data_path, model_name, batch_size, aggregate_type):
     elif model_name == 'chatglm2':
         checkpoint = '../llm/chatglm-v2' if os.path.exists('../../llm/chatglm-v2') else 'chatglm-v2'
     elif model_name == 'bert':
-        checkpoint = '/mmu_nlp_hdd/xiayu12/LIBER/llm/bert-base-uncased' if os.path.exists('/mmu_nlp_hdd/xiayu12/LIBER/llm/bert-base-uncased') else 'bert-base-uncased'
+        checkpoint = '/llm/bert-base-uncased' if os.path.exists('/llm/bert-base-uncased') else 'bert-base-uncased'
     elif model_name == 'longformer':
-        checkpoint = '../llm/longformer-base-4096' if os.path.exists('/mmu_nlp_hdd/xiayu12/LIBER/llm/longformer-base-4096') else 'longformer-base-4096'
+        checkpoint = '../llm/longformer-base-4096' if os.path.exists('/llm/longformer-base-4096') else 'longformer-base-4096'
     elif model_name == 'bge':
-        checkpoint = '/mmu_nlp_hdd/xiayu12/LIBER/llm/bge-m3' if os.path.exists('/mmu_nlp_hdd/xiayu12/LIBER/llm/bge-m3') else 'bge-m3'
+        checkpoint = '/llm/bge-m3' if os.path.exists('/llm/bge-m3') else 'bge-m3'
     else:
         raise NotImplementedError
 
