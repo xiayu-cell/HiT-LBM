@@ -172,7 +172,6 @@ def main(knowledge_path, data_path, model_name, batch_size, aggregate_type):
 
 
 if __name__ == '__main__':
-    # KLG_DATA_DIR = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/amz_prm'
     KLG_DATA_DIR = '/preference_generation/ml-1m/block_len_100/summary'
     SAVE_DATA_DIR = '../data'
     # DATA_SET_NAME = 'amz'
