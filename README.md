@@ -25,6 +25,9 @@
       2. Utilize LLM to score for continuity (SRM) and validity (PRM):
          1. `python SRM/batch_infer.py`
          2. `python PRM/batch_infer_book.py`
+      3. Train SRM and PRM:
+         1. `python SRM/prm.py`
+         2. `python PRM/prm_amz.py`
    
    2. Inference
       1. `python PRM/batch_infer_with_Best_N_amz.py`
