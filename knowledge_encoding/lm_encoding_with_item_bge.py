@@ -136,11 +136,7 @@ def main(knowledge_path, data_path, model_name, batch_size, aggregate_type):
     elif model_name == 'longformer':
         checkpoint = '/llm/longformer-base-4096' if os.path.exists('/llm/longformer-base-4096') else 'longformer-base-4096'
     elif model_name == 'bge':
-<<<<<<< HEAD
         checkpoint = '/llm/bge-m3' if os.path.exists('/llm/bge-m3') else 'bge-m3'
-=======
-        checkpoint = '/LIBER/llm/bge-m3' if os.path.exists('/llm/bge-m3') else 'bge-m3'
->>>>>>> db37b2f (Merge remote changes)
     else:
         raise NotImplementedError
 
@@ -174,11 +170,7 @@ def main(knowledge_path, data_path, model_name, batch_size, aggregate_type):
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
     KLG_DATA_DIR = 'preference_generation/amz'
-=======
-    KLG_DATA_DIR = '/preference_generation/amz/block_len_50'
->>>>>>> db37b2f (Merge remote changes)
     SAVE_DATA_DIR = '../data'
     DATA_SET_NAME = 'amz'
     # DATA_SET_NAME = 'ml-1m'
