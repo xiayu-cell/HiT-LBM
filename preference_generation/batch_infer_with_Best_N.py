@@ -78,11 +78,7 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
                 res[user][str(block_id)]['cur_prompt'] = q
 
                 # quess.append(q)
-        json.dump(res,f,ensure_ascii=False,indent=4)
-        # with open(f'/mmu_nlp_hdd/xiayu12/LIBER_ours_train/preference_generation/ml-1m/summary/question_{block_id}_{thread_id}.json', 'w') as file:
-        #     json.dump(quess,file,ensure_ascii=False,indent=4)
-
-            # break
+       
 
 if __name__ == "__main__":
     prompt_path = '/data/ml-1m/proc_data/block_len_50/all_prompt.hist'
