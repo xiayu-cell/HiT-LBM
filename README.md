@@ -19,23 +19,25 @@
       3. `python batch_infer_item.py`
 
 4. Hierarchical Tree Search
+   If you want to generate user interests using hierarchical tree search, you can run the following code.
    1. Process Rating Model
-      1. You can run the following file to achieve the expansion of interest nodes:
-         `python batch_infer_with_Best_N.py`
-      2. Utilize LLM to score for continuity (SRM) and validity (PRM):
-         1. `python SRM/batch_infer.py`
-         2. `python PRM/batch_infer_book.py`
-      3. Train SRM and PRM:
+      1. Construct training data
+         1. You can run the following file to achieve the expansion of interest nodes:
+            `python batch_infer_with_Best_N.py`
+         2. Utilize LLM to score for continuity (SRM) and validity (PRM):
+            1. `python SRM/batch_infer.py`
+            2. `python PRM/batch_infer_book.py`
+      2. Train SRM and PRM:
          1. `python SRM/prm.py`
          2. `python PRM/prm_amz.py`
    
    2. Inference
       1. `python PRM/batch_infer_with_Best_N_amz.py`
 
-5. Knowledge encoding: in folder `knowledge_encoding`
+6. Knowledge encoding: in folder `knowledge_encoding`
    1. Run `python lm_encoding_with_item_bge.py`
 
-6. RS: in folder `RS`
+7. RS: in folder `RS`
    1. `bash RS/run_amz.sh` for ctr task
 
 Our implementation code is based on : 
