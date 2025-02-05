@@ -122,8 +122,8 @@ def train():
     input_dim = 1024*2  # 输入维度，与嵌入维度一致
     hidden_dim = [512,128]  # 隐藏层维度
     output_dim = 2   # 输出维度，二分类问题
-    emb_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50/bge_avg_seperate_emb.sum'
-    label_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50/prm_train.json' 
+    emb_path = '/PRM/ml-1m/block_len_50/bge_avg_seperate_emb.sum'
+    label_path = '/PRM/ml-1m/block_len_50/prm_train.json' 
     threshold = 0.5
     data = EmbLabelDataset(emb_path, label_path, threshold,'train')
     # test_data = EmbLabelDataset(emb_path, label_path, threshold,'test')
@@ -167,7 +167,7 @@ def train():
             scheduler.step()
 
         # 保存模型权重
-        torch.save(model.state_dict(), f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/checkpoint/cls_epoch_{epoch}_threshold_{threshold}.pth')
+        torch.save(model.state_dict(), f'/PRM/checkpoint/cls_epoch_{epoch}_threshold_{threshold}.pth')
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
         # 测试阶段
@@ -218,7 +218,7 @@ def train():
         print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {accuracy:.2f}%, Test AUC: {auc:.2f}')
         # print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {accuracy:.2f}%')
         results_df = pd.concat(df_list, ignore_index=True)
-        results_df.to_csv(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/test_prm_epoch_{epoch}.csv')
+        results_df.to_csv(f'/PRM/test_prm_epoch_{epoch}.csv')
 
 if __name__ == '__main__':
     

@@ -1,6 +1,6 @@
 import json
 import os
-item_knowledge_folder = '/mmu_nlp_hdd/xiayu12/LIBER_ours/preference_generation/amz/item_knowledge'
+item_knowledge_folder = '/preference_generation/amz/item_knowledge'
 all = {}
 for filename in os.listdir(item_knowledge_folder):
     if filename.startswith(f'item_knowledge') and filename.endswith(".json"):
@@ -12,6 +12,6 @@ for filename in os.listdir(item_knowledge_folder):
             all.update(t)
 
 print(len(all))
-path = '/mmu_nlp_hdd/xiayu12/LIBER_ours/preference_generation/amz/item_knowledge/all_item_knowledge.json'
+path = '/preference_generation/amz/item_knowledge/all_item_knowledge.json'
 with open(path,'w',encoding='utf-8') as f:
     json.dump(all,f,ensure_ascii=False,indent=4)

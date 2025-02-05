@@ -26,7 +26,7 @@ def update_prm(block_id):
     os.environ["CUDA_VISIBLE_DEVICES"] = '5,6,7,8'
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # 每个blockinfer完，用prm对其进行打分
-    block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_prm'
+    block_interest_folder = '/PRM/ml-1m_prm'
     if block_id >= 0:
         cur_block_interest = {}
         for filename in os.listdir(block_interest_folder):
@@ -67,7 +67,7 @@ def update_prm(block_id):
             cur_block_interest[idx][str(block_id)]['preds'] = []
         cur_block_interest[idx][str(block_id)]['preds'].append(pred)
 
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_prm/prm_interest_{block_id}.json', 'w') as f:
+    with open(f'/PRM/ml-1m_prm/prm_interest_{block_id}.json', 'w') as f:
         json.dump(cur_block_interest,f,ensure_ascii=False,indent=4)
 
 def run_inference1(model_path,batch, bs, thread_id):
@@ -102,7 +102,7 @@ def run_inference1(model_path,batch, bs, thread_id):
     
     # 保存结果到文件
     generated_texts = []
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_prm/llm_prm/prm_interest_{block_id}_{thread_id}.json', 'w') as f:
+    with open(f'/PRM/ml-1m_prm/llm_prm/prm_interest_{block_id}_{thread_id}.json', 'w') as f:
         for i in tqdm(range(0,len(labels),bs)):
             msg = prompts[i:min((i+bs),len(labels))]
             label = labels[i:min((i+bs),len(labels))]
@@ -176,7 +176,7 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
     # generated_texts = []
     res = {}
 
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_prm/llm_prm/interest_{block_id}_{thread_id}.json', 'w') as f:
+    with open(f'/PRM/ml-1m_prm/llm_prm/interest_{block_id}_{thread_id}.json', 'w') as f:
         for i in tqdm(range(0,len(prompts),bs)):
             msg = prompts[i:min(i+bs,len(prompts))]
             ques = questions[i:min(i+bs,len(prompts))]
@@ -204,15 +204,11 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
                 # quess.append(q)
         json.dump(res,f,ensure_ascii=False,indent=4)
 
-        # with open(f'/mmu_nlp_hdd/xiayu12/LIBER_ours_train/preference_generation/ml-1m/summary/question_{block_id}_{thread_id}.json', 'w') as file:
-        #     json.dump(quess,file,ensure_ascii=False,indent=4)
-            # break
 
 if __name__ == "__main__":
-    prompt_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/data/ml-1m/proc_data/block_len_50/all_prompt.hist'
-    model_path = '/share/ad/xiayu12/Open-World-Knowledge-Augmented-Recommendation_Gang/checkpoints/Qwen/Qwen2___5-7B-Instruct'
-    prm_path = '/mmu_nlp_ssd/xiayu12/LLaMA-Factory/saves/Qwen2.5_7B_Instruct/full/sft/checkpoint-48'
-    # bge_path = '/mmu_nlp_hdd/xiayu12/LIBER/llm/bge-m3'
+    prompt_path = '/data/ml-1m/proc_data/block_len_50/all_prompt.hist'
+    model_path = '/checkpoints/Qwen/Qwen2___5-7B-Instruct'
+
     with open(prompt_path,'r',encoding='utf-8') as f:
         data = json.load(f)
     # data = {'4683':data['4683']}
@@ -224,7 +220,7 @@ if __name__ == "__main__":
     for block_id in range(0,200):
         data_list = []
 
-        block_interest_folder = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m_prm/llm_prm'
+        block_interest_folder = '/PRM/ml-1m_prm/llm_prm'
 
         if block_id > 0:
             pre_block_interest = {}

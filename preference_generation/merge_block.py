@@ -1,6 +1,6 @@
 import json
 import os
-block_interest_folder = '/mmu_nlp_hdd/xiayu12/LIBER/preference_generation/ml-1m'
+block_interest_folder = '/preference_generation/ml-1m'
 all = {}
 for filename in os.listdir(block_interest_folder):
     if filename.startswith(f'interest') and filename.endswith(".json"):
@@ -23,6 +23,6 @@ for k,v in all.items():
 sorted_dict = dict(sorted(all.items(), key=lambda item: int(item[0])))
 
 print(len(sorted_dict))
-path = '/mmu_nlp_hdd/xiayu12/LIBER/preference_generation/ml-1m/all_block_interest.json'
+path = '/preference_generation/ml-1m/all_block_interest.json'
 with open(path,'w',encoding='utf-8') as f:
     json.dump(sorted_dict,f,ensure_ascii=False,indent=4)

@@ -113,8 +113,8 @@ def train():
     input_dim = 1024  # 输入维度，与嵌入维度一致
     hidden_dim = 128  # 隐藏层维度
     output_dim = 1   # 输出维度，二分类问题
-    emb_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50/bge_avg_emb.sum'
-    label_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/ml-1m/block_len_50/final_prm_data.json' 
+    emb_path = '/PRM/ml-1m/block_len_50/bge_avg_emb.sum'
+    label_path = '/PRM/ml-1m/block_len_50/final_prm_data.json' 
     threshold = 0.5
     data = EmbLabelDataset(emb_path, label_path, threshold)
     train_size = int(0.8 * len(data))
@@ -150,7 +150,7 @@ def train():
             optimizer.step()
 
         # 保存模型权重
-        torch.save(model.state_dict(), f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/checkpoint/regression_epoch_{epoch}_threshold_{threshold}.pth')
+        torch.save(model.state_dict(), f'/PRM/checkpoint/regression_epoch_{epoch}_threshold_{threshold}.pth')
         print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
         # 测试阶段
@@ -192,7 +192,7 @@ def train():
         accuracy = 100 * correct / total
         print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {accuracy:.2f}%')
         results_df = pd.concat(df_list, ignore_index=True)
-        results_df.to_csv(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/test_prm_epoch_{epoch}_regression.csv')
+        results_df.to_csv(f'/PRM/test_prm_epoch_{epoch}_regression.csv')
 
 if __name__ == '__main__':
     

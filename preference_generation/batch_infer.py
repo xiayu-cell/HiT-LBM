@@ -57,7 +57,7 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
     # generated_texts = []
     res = {}
 
-    with open(f'/mmu_vcg2_wjc_ssd/xiayu12/LIBER_ours_train/preference_generation/ml-1m/block_len_20/summary/interest_{block_id}_{thread_id}.json', 'w') as f:
+    with open(f'/preference_generation/ml-1m/block_len_20/summary/interest_{block_id}_{thread_id}.json', 'w') as f:
         for i in tqdm(range(0,len(prompts),bs)):
             msg = prompts[i:min(i+bs,len(prompts))]
             ques = questions[i:min(i+bs,len(prompts))]
@@ -85,8 +85,8 @@ def run_inference(model_path,block_id,batch, bs, thread_id):
             # break
 
 if __name__ == "__main__":
-    prompt_path = '/mmu_vcg2_wjc_ssd/xiayu12/LIBER_ours_train/data/ml-1m/proc_data/block_len_20/all_prompt.hist'
-    model_path = '/share/ad/xiayu12/Open-World-Knowledge-Augmented-Recommendation_Gang/checkpoints/Qwen/Qwen2___5-7B-Instruct'
+    prompt_path = '/data/ml-1m/proc_data/block_len_20/all_prompt.hist'
+    model_path = '/checkpoints/Qwen/Qwen2___5-7B-Instruct'
     # model_path = '/share/ad/xiayu12/Open-World-Knowledge-Augmented-Recommendation_Gang/checkpoints/Qwen/Qwen2___5-1___5B-Instruct'
     # model_path = '/share/ad/guhao/sigir/qwen_check/qwen2.5_3b_instruct'
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     for block_id in range(0,200):
         data_list = []
 
-        block_interest_folder = '/mmu_vcg2_wjc_ssd/xiayu12/LIBER_ours_train/preference_generation/ml-1m/block_len_20/summary'
+        block_interest_folder = '/preference_generation/ml-1m/block_len_20/summary'
 
         if block_id > 0:
             pre_block_interest = {}

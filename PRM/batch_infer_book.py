@@ -69,7 +69,7 @@ def run_inference(model_path,batch, bs, thread_id):
     # generated_texts = []
     res = {}
 
-    with open(f'/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/amz/prediction_{thread_id}.json', 'w') as f:
+    with open(f'/PRM_point/amz/prediction_{thread_id}.json', 'w') as f:
         for i in tqdm(range(0,len(prompts),bs)):
             msg = prompts[i:min(i+bs,len(prompts))]
             ques = questions[i:min(i+bs,len(prompts))]
@@ -117,8 +117,8 @@ def run_inference(model_path,batch, bs, thread_id):
 
 
 if __name__ == "__main__":
-    prompt_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM_point/amz/prm_data.json'
-    model_path = '/share/ad/xiayu12/Open-World-Knowledge-Augmented-Recommendation_Gang/checkpoints/Qwen/Qwen2___5-7B-Instruct'
+    prompt_path = '/PRM_point/amz/prm_data.json'
+    model_path = '/checkpoints/Qwen/Qwen2___5-7B-Instruct'
 
     with open(prompt_path,'r',encoding='utf-8') as f:
         data = json.load(f)

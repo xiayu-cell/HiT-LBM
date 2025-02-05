@@ -1,6 +1,6 @@
 import json
 import os
-block_interest_folder = '/mmu_vcg2_wjc_ssd/xiayu12/LIBER_ours_train/preference_generation/amz/block_len_50/summary'
+block_interest_folder = '/preference_generation/amz/block_len_50/summary'
 all = {}
 num = 0
 for filename in os.listdir(block_interest_folder):
@@ -26,6 +26,6 @@ for k,v in all.items():
 
 print(len(all))
 print(num)
-path = '/mmu_vcg2_wjc_ssd/xiayu12/LIBER_ours_train/preference_generation/ml-1m/amz/summary/all_interest.json'
+path = '/preference_generation/ml-1m/amz/summary/all_interest.json'
 with open(path,'w',encoding='utf-8') as f:
     json.dump(all,f,ensure_ascii=False,indent=4)

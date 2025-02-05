@@ -2,8 +2,8 @@ import json
 import random
 
 if __name__ == '__main__':
-    data_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/preference_generation/amz/block_len_50/summary/all_interest.json'
-    block2item_path = '/mmu_nlp_ssd/xiayu12/LIBER_ours_train/data/amz/proc_data/block_len_50/block2item.json'
+    data_path = '/preference_generation/amz/block_len_50/summary/all_interest.json'
+    block2item_path = '/data/amz/proc_data/block_len_50/block2item.json'
     with open(block2item_path,'r',encoding='utf-8') as f:
         block2item = json.load(f)
 
@@ -46,5 +46,5 @@ if __name__ == '__main__':
             })
     print(len(data_list))
     # prm_data = random.sample(data_list,2000)
-    with open('/mmu_nlp_ssd/xiayu12/LIBER_ours_train/PRM/amz/block_len_50/prm_data.json','w',encoding='utf-8') as f:
+    with open('/PRM/amz/block_len_50/prm_data.json','w',encoding='utf-8') as f:
         json.dump(data_list,f,ensure_ascii=False,indent=4)
