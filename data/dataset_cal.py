@@ -1,6 +1,5 @@
 import json
 
-# path = "/mmu_nlp_hdd/xiayu12/Open-World-Knowledge-Augmented-Recommendation/data/ml-1m/proc_data/sequential_data.json"
 path = '/data/ml-1m/proc_data/sequential_data.json'
 
 with open(path,'r',encoding='utf-8') as f:
